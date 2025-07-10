@@ -1,0 +1,21 @@
+langgraph
+langchain
+langchain-core
+langchain-community
+langchain-text-splitters
+sentence-transformers
+pypdf
+docx2txt
+unstructured
+fastapi
+uvicorn
+streamlit
+python-dotenv
+# Removed pinecone-client as per request
+pinecone # New pinecone library
+langchain-pinecone # This still uses the PineconeVectorStore integration
+langchain-groq
+langchain-tavily
+requests # For Streamlit to communicate with FastAPI
+uuid # Used in Streamlit for session_id generation
+langchain-huggingface
