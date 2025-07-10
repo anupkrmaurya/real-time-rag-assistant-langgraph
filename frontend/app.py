@@ -15,7 +15,7 @@ def load_config():
     """
     load_dotenv()
     return {
-        "FASTAPI_BASE_URL": os.getenv("FASTAPI_BASE_URL", "http://localhost:8000")
+        "FASTAPI_BASE_URL": os.getenv("FASTAPI_BASE_URL","https://agentbot-xaew.onrender.com")
     }
 
 # --- Session State Management ---
