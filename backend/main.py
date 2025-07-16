@@ -1,7 +1,6 @@
 # rag_agent_app/backend/main.py
 
 import os
-from pathlib import Path
 import time
 from typing import List, Dict, Any
 import tempfile
@@ -11,11 +10,11 @@ from pydantic import BaseModel, Field
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_community.document_loaders import PyPDFLoader
-import shutil
 
-# Import your agent components and new vectorstore function
-from .agent import rag_agent, AgentState # Ensure AgentState is imported
-from .vectorstore import add_document_to_vectorstore
+
+
+from agent import rag_agent
+from vectorstore import add_document_to_vectorstore
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -94,11 +93,11 @@ async def upload_document(file: UploadFile = File(...)):
             os.remove(temp_file_path)
             print(f"Cleaned up temporary file: {temp_file_path}")
 
+
+
 # --- Chat Endpoint ---
 @app.post("/chat/", response_model=AgentResponse)
 async def chat_with_agent(request: QueryRequest):
-    start_time = time.time()
-
     trace_events_for_frontend: List[TraceEvent] = []
     
     try:
@@ -106,19 +105,13 @@ async def chat_with_agent(request: QueryRequest):
         config = {
             "configurable": {
                 "thread_id": request.session_id,
-                "web_search_enabled": request.enable_web_search # NEW: Pass the toggle state
+                "web_search_enabled": request.enable_web_search
             }
         }
         inputs = {"messages": [HumanMessage(content=request.query)]}
 
         final_message = ""
         
-        llm_calls_count = 0 
-        rag_calls_count = 0
-        web_calls_count = 0
-        total_llm_input_tokens = 0
-        total_llm_output_tokens = 0
-
         print(f"--- Starting Agent Stream for session {request.session_id} ---")
         print(f"Web Search Enabled: {request.enable_web_search}") # For server-side debugging
 
@@ -151,7 +144,6 @@ async def chat_with_agent(request: QueryRequest):
                     event_details = {"decision": route_decision, "reason": "Based on initial query analysis."}
                 event_type = "router_decision"
             elif current_node_name == "rag_lookup":
-                rag_calls_count += 1
                 rag_content_summary = node_output_state.get("rag", "")[:200] + "..."
                 
                 rag_sufficient = node_output_state.get("route") == "answer" 
@@ -165,7 +157,6 @@ async def chat_with_agent(request: QueryRequest):
                 
                 event_type = "rag_action"
             elif current_node_name == "web_search":
-                web_calls_count += 1
                 web_content_summary = node_output_state.get("web", "")[:200] + "..."
                 event_description = f"Web Search performed. Results retrieved. Proceeding to answer."
                 event_details = {"retrieved_content_summary": web_content_summary}
@@ -188,8 +179,7 @@ async def chat_with_agent(request: QueryRequest):
             )
             print(f"Streamed Event: Step {i+1} - Node: {current_node_name} - Desc: {event_description}")
 
-        total_time_taken = time.time() - start_time
-        
+        # Get the final state from the last yielded item in the stream
         final_actual_state_dict = None
         if s:
             if '__end__' in s:
@@ -202,15 +192,6 @@ async def chat_with_agent(request: QueryRequest):
             for msg in reversed(final_actual_state_dict["messages"]):
                 if isinstance(msg, AIMessage):
                     final_message = msg.content
-                    
-                    if hasattr(msg, 'response_metadata') and 'token_usage' in msg.response_metadata:
-                        token_usage = msg.response_metadata['token_usage']
-                        prompt_tokens = token_usage.get('prompt_tokens', 0)
-                        completion_tokens = token_usage.get('completion_tokens', 0)
-                        total_llm_input_tokens = prompt_tokens
-                        total_llm_output_tokens = completion_tokens
-                        llm_calls_count += 1
-
                     break
         
         if not final_message:
@@ -218,10 +199,6 @@ async def chat_with_agent(request: QueryRequest):
              raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Agent did not return a valid response (final AI message not found).")
 
         print(f"--- Agent Stream Ended. Final Response: {final_message[:200]}... ---")
-        print(f"Total Latency: {total_time_taken:.2f} seconds")
-        print(f"LLM Calls: {llm_calls_count}, RAG Calls: {rag_calls_count}, Web Calls: {web_calls_count}")
-        print(f"Total LLM Input Tokens: {total_llm_input_tokens}, Output Tokens: {total_llm_output_tokens}")
-
 
         return AgentResponse(response=final_message, trace_events=trace_events_for_frontend)
 
@@ -231,6 +208,7 @@ async def chat_with_agent(request: QueryRequest):
         error_details = f"Error during agent invocation: {e}"
         print(error_details)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal Server Error: {e}")
+    
 
 @app.get("/health")
 async def health_check():

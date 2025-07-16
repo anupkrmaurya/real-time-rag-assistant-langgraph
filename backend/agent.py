@@ -11,8 +11,8 @@ from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
 # Import API keys from config
-from .config import GROQ_API_KEY, TAVILY_API_KEY
-from .vectorstore import get_retriever
+from config import GROQ_API_KEY, TAVILY_API_KEY
+from vectorstore import get_retriever
 
 # --- Tools ---
 os.environ["TAVILY_API_KEY"] = TAVILY_API_KEY
@@ -77,7 +77,7 @@ def router_node(state: AgentState) -> AgentState:
     # Get web_search_enabled from the state, default to True if not explicitly set
     web_search_enabled = state.get("web_search_enabled", True) 
     print(f"Router received web_search_enabled: {web_search_enabled}")
-
+ 
     system_prompt = (
         "You are an intelligent routing agent designed to direct user queries to the most appropriate tool."
         "Your primary goal is to provide accurate and relevant information by selecting the best source."

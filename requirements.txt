@@ -11,11 +11,10 @@ fastapi
 uvicorn
 streamlit
 python-dotenv
-# Removed pinecone-client as per request
-pinecone # New pinecone library
-langchain-pinecone # This still uses the PineconeVectorStore integration
+pinecone 
+langchain-pinecone 
 langchain-groq
 langchain-tavily
-requests # For Streamlit to communicate with FastAPI
-uuid # Used in Streamlit for session_id generation
+requests 
+uuid 
 langchain-huggingface

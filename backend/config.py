@@ -5,8 +5,8 @@ load_dotenv() # Load environment variables from .env file
 
 # Pinecone
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT","us-east-1") # e.g., "us-east-1"
-PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "rag-index") # Using this as the main index name
+PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT","us-east-1") 
+PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "rag-index") 
 
 # Groq
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
