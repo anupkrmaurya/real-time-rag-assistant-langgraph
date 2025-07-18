@@ -9,6 +9,7 @@ from langchain_tavily import TavilySearch
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.runnables import RunnableConfig # <-- NEW LINE ADDED HERE
 
 # Import API keys from config
 from config import GROQ_API_KEY, TAVILY_API_KEY
@@ -70,13 +71,13 @@ class AgentState(TypedDict, total=False):
     web_search_enabled: bool # NEW: Add web search enabled flag to state
 
 # --- Node 1: router (decision) ---
-def router_node(state: AgentState) -> AgentState:
+def router_node(state: AgentState,config : RunnableConfig) -> AgentState:
     print("\n--- Entering router_node ---")
     query = next((m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), "")
     
-    # Get web_search_enabled from the state, default to True if not explicitly set
-    web_search_enabled = state.get("web_search_enabled", True) 
-    print(f"Router received web_search_enabled: {web_search_enabled}")
+    # MODIFIED: Get web_search_enabled directly from the config
+    web_search_enabled = config.get("configurable", {}).get("web_search_enabled", True) # <-- CHANGED LINE
+    print(f"Router received web search info : {web_search_enabled}")
  
     system_prompt = (
         "You are an intelligent routing agent designed to direct user queries to the most appropriate tool."
@@ -149,10 +150,12 @@ def router_node(state: AgentState) -> AgentState:
     return out
 
 # --- Node 2: RAG lookup ---
-def rag_node(state: AgentState) -> AgentState:
+def rag_node(state: AgentState,config:RunnableConfig) -> AgentState:
     print("\n--- Entering rag_node ---")
     query = next((m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), "")
-    web_search_enabled = state.get("web_search_enabled", True) # Get the flag
+    # MODIFIED: Get web_search_enabled directly from the config
+    web_search_enabled = config.get("configurable", {}).get("web_search_enabled", True) # <-- CHANGED LINE
+    print(f"Router received web search info : {web_search_enabled}")
     print(f"RAG query: {query}")
     chunks = rag_search_tool.invoke(query)
     
@@ -201,12 +204,14 @@ def rag_node(state: AgentState) -> AgentState:
     }
 
 # --- Node 3: web search ---
-def web_node(state: AgentState) -> AgentState:
+def web_node(state: AgentState,config:RunnableConfig) -> AgentState:
     print("\n--- Entering web_node ---")
     query = next((m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), "")
     
     # Check if web search is actually enabled before performing it
-    web_search_enabled = state.get("web_search_enabled", True)
+    # MODIFIED: Get web_search_enabled directly from the config
+    web_search_enabled = config.get("configurable", {}).get("web_search_enabled", True) # <-- CHANGED LINE
+    print(f"Router received web search info : {web_search_enabled}")
     if not web_search_enabled:
         print("Web search node entered but web search is disabled. Skipping actual search.")
         return {**state, "web": "Web search was disabled by the user.", "route": "answer"}
