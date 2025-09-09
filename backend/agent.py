@@ -58,9 +58,9 @@ class RagJudge(BaseModel):
 # --- LLM instances with structured output where needed ---
 os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
-router_llm = ChatGroq(model="llama3-70b-8192", temperature=0).with_structured_output(RouteDecision)
-judge_llm = ChatGroq(model="llama3-70b-8192", temperature=0).with_structured_output(RagJudge)
-answer_llm = ChatGroq(model="llama3-70b-8192", temperature=0.7)
+router_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0).with_structured_output(RouteDecision)
+judge_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0).with_structured_output(RagJudge)
+answer_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.7)
 
 # --- Shared state type ---
 class AgentState(TypedDict, total=False):

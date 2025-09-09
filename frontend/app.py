@@ -1,4 +1,6 @@
 # rag_agent_app/frontend/app.py
+import requests
+import json
 
 import streamlit as st
 from config import FRONTEND_CONFIG

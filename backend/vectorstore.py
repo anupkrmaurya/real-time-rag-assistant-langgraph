@@ -22,7 +22,7 @@ pc = Pinecone(api_key=PINECONE_API_KEY)
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 # Define Pinecone index name
-INDEX_NAME = "langgraph-rag-index" # Make sure this matches your actual index name
+INDEX_NAME = "rag-index" # Make sure this matches your actual index name
 
 # --- Retriever (Existing function) ---
 def get_retriever():

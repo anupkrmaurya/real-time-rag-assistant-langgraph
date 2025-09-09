@@ -213,3 +213,14 @@ async def chat_with_agent(request: QueryRequest):
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+
+import traceback
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def exception_handler(request, exc):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "traceback": traceback.format_exc()},
+    )
