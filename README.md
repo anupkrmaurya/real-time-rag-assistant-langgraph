@@ -315,10 +315,6 @@ We welcome contributions! Please see our contributing guidelines for details on:
 - Pull request process
 - Issue reporting
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🙏 Acknowledgments
 
 - **LangChain** team for the excellent AI orchestration framework
