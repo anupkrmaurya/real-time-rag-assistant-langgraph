@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig # <-- NEW LINE ADDED HERE
+from weather import get_weather
 
 # Import API keys from config
 from config import GROQ_API_KEY, TAVILY_API_KEY
@@ -47,6 +48,11 @@ def rag_search_tool(query: str) -> str:
     except Exception as e:
         return f"RAG_ERROR::{e}"
 
+@tool
+def weather_tool(location: str) -> str:
+    """Get the current weather for a city or location."""
+    return get_weather(location)
+
 # --- Pydantic schemas for structured output ---
 class RouteDecision(BaseModel):
     route: Literal["rag", "web", "answer", "end"]
@@ -71,11 +77,12 @@ class AgentState(TypedDict, total=False):
     web_search_enabled: bool # NEW: Add web search enabled flag to state
 
 # --- Node 1: router (decision) ---
-def router_node(state: AgentState,config : RunnableConfig) -> AgentState:
-    print("\n--- Entering router_node ---")
+def router_node(state: AgentState, config: RunnableConfig) -> AgentState:
     query = next((m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), "")
+    if "weather" in query.lower():
+        return {**state, "route": "weather"}
     
-    # MODIFIED: Get web_search_enabled directly from the config
+    print("\n--- Entering router_node ---")
     web_search_enabled = config.get("configurable", {}).get("web_search_enabled", True) # <-- CHANGED LINE
     print(f"Router received web search info : {web_search_enabled}")
  
@@ -310,5 +317,7 @@ def build_agent():
 
     agent = g.compile(checkpointer=MemorySaver())
     return agent
+
+TOOLS = [rag_search_tool, web_search_tool, weather_tool]
 
 rag_agent = build_agent()

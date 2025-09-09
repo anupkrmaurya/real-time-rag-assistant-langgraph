@@ -1,6 +1,3 @@
-
-
-
 import os
 from dotenv import load_dotenv
 
@@ -21,6 +18,8 @@ EMBED_MODEL = os.getenv("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 
 # Paths (adjust as needed)
 DOC_SOURCE_DIR = os.getenv("DOC_SOURCE_DIR", "data")
+
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
 
 
