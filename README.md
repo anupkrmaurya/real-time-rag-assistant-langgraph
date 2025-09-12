@@ -2,6 +2,13 @@
 
 A sophisticated AI agent application that intelligently combines private knowledge base retrieval (RAG) with real-time web search and weather information capabilities, giving users complete control over information sources and full transparency into the AI's decision-making process.
 
+## 🎥 Demo Video  
+
+👉 [Watch Demo Video](Video.mp4)  
+
+*(Open the file `Video.mp4` in this repo to view the demo.)*  
+
+---
 ## 🌟 Overview
 
 This application represents a cutting-edge approach to AI-powered question answering, where the agent dynamically chooses between internal knowledge, web search, and weather services based on query requirements. Built with a modern tech stack and modular architecture, it provides both developers and users with unprecedented insight into AI reasoning processes.

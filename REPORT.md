@@ -4,6 +4,14 @@
 **College:** Galgotias College of Engineering and Technology  
 
 ---
+## 🎥 Demo Video  
+
+👉 [Watch Demo Video](Video.mp4)  
+
+*(Open the file `Video.mp4` in this repo to view the demo.)*  
+
+---
+
 
 ## 1. Approach  
 
