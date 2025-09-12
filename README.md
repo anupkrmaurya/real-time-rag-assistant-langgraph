@@ -1,32 +1,36 @@
-# 🤖 Smart AI Agent: RAG, Web Search & LangGraph
+# 🤖 Smart AI Agent: RAG, Web Search, Weather & LangGraph
 
-A sophisticated AI agent application that intelligently combines private knowledge base retrieval (RAG) with real-time web search capabilities, giving users complete control over information sources and full transparency into the AI's decision-making process.
+A sophisticated AI agent application that intelligently combines private knowledge base retrieval (RAG) with real-time web search and weather information capabilities, giving users complete control over information sources and full transparency into the AI's decision-making process.
 
 ## 🌟 Overview
 
-This application represents a cutting-edge approach to AI-powered question answering, where the agent dynamically chooses between internal knowledge and web search based on query requirements. Built with a modern tech stack and modular architecture, it provides both developers and users with unprecedented insight into AI reasoning processes.
+This application represents a cutting-edge approach to AI-powered question answering, where the agent dynamically chooses between internal knowledge, web search, and weather services based on query requirements. Built with a modern tech stack and modular architecture, it provides both developers and users with unprecedented insight into AI reasoning processes.
 
 ## ✨ Key Features
 
 ### 🧠 **Intelligent Hybrid Reasoning**
 - **Dynamic Source Selection**: Automatically routes queries to the most appropriate information source
 - **RAG Sufficiency Assessment**: Uses LLM to evaluate whether internal knowledge is adequate
-- **Fallback Mechanisms**: Seamlessly transitions to web search when internal knowledge is insufficient
+- **Weather Detection**: Smart identification of weather-related queries with location extraction
+- **Fallback Mechanisms**: Seamlessly transitions between different information sources
 
 ### 🎛️ **User Control & Transparency**
 - **Web Search Toggle**: Complete user control over external information access
 - **Agent Trace Visualization**: Detailed step-by-step breakdown of AI decision-making process
 - **Routing Decision Logs**: Clear visibility into why certain information sources were chosen
+- **Multi-Tool Coordination**: See how the agent coordinates between different tools and services
 
 ### 📚 **Dynamic Knowledge Management**
 - **PDF Upload & Processing**: Instant document ingestion with automatic embedding generation
 - **Vector Storage Integration**: Seamless integration with Pinecone for efficient similarity search
 - **Contextual Retrieval**: Smart chunk retrieval based on semantic similarity
+- **Real-time Weather Data**: Current weather information from OpenWeatherMap API
 
 ### 🔧 **Enterprise-Ready Architecture**
 - **Modular Design**: Clean separation of concerns across frontend, backend, and agent layers
 - **Persistent Memory**: Conversation context maintained across multiple interactions
 - **Scalable Infrastructure**: Built for production deployment and scaling
+- **Tool Extensibility**: Easy integration of new tools and services
 
 ## 🏗️ Architecture Overview
 
@@ -36,7 +40,8 @@ graph TB
     B --> C[🤖 Agent Core<br/>LangGraph]
     C --> D[📊 Knowledge Base<br/>Pinecone + Embeddings]
     C --> E[🌐 External Tools<br/>Groq LLM + Tavily Search]
-    C --> F[💾 Memory<br/>Conversation State]
+    C --> F[🌤️ Weather Service<br/>OpenWeatherMap API]
+    C --> G[💾 Memory<br/>Conversation State]
 ```
 
 ### Component Breakdown
@@ -49,6 +54,7 @@ graph TB
 | **Knowledge** | Pinecone + HuggingFace | Vector storage and semantic search |
 | **LLM** | Groq (Llama 3) | Natural language processing and generation |
 | **Search** | Tavily API | Real-time web search capabilities |
+| **Weather** | OpenWeatherMap | Current weather information |
 
 ## 📁 Project Structure
 
@@ -65,6 +71,7 @@ agentBot/
 │   ├── main.py                # 🌐 FastAPI application server
 │   ├── agent.py               # 🧠 LangGraph agent workflow
 │   ├── vectorstore.py         # 📊 RAG and Pinecone operations
+│   ├── weather.py             # 🌤️ Weather service integration
 │   └── config.py              # 🔐 Environment and API keys
 │
 ├── requirements.txt           # 📦 Python dependencies
@@ -90,6 +97,7 @@ agentBot/
 - **Pinecone** - Vector database for similarity search
 - **PyPDFLoader** - PDF document processing
 - **Tavily API** - Web search integration
+- **OpenWeatherMap API** - Real-time weather data
 
 ## 🚀 Quick Start Guide
 
@@ -102,6 +110,7 @@ Ensure you have the following before starting:
   - [Groq](https://console.groq.com/) for LLM inference
   - [Pinecone](https://www.pinecone.io/) for vector storage
   - [Tavily](https://tavily.com/) for web search
+  - [OpenWeatherMap](https://openweathermap.org/api) for weather data
 - **Pinecone Index** configured with:
   - Name: `rag-index`
   - Dimensions: `384`
@@ -153,6 +162,9 @@ PINECONE_ENVIRONMENT=your_pinecone_environment
 # Web Search
 TAVILY_API_KEY=your_tavily_api_key_here
 
+# Weather Service
+OPENWEATHER_API_KEY=your_openweather_api_key_here
+
 # Application Settings
 FASTAPI_BASE_URL=http://localhost:8000
 ```
@@ -185,11 +197,42 @@ streamlit run frontend/app.py
 3. **View Agent Trace**: Expand the trace section to see decision-making process
 4. **Upload Documents**: Use the file uploader to add PDFs to the knowledge base
 
+### Query Types & Routing
+
+The agent intelligently routes different types of queries:
+
+- **Knowledge Base Queries**: "What are the symptoms of diabetes?" → RAG Search
+- **Current Events**: "Latest news about AI" → Web Search
+- **Weather Queries**: "What's the weather in London?" → Weather Service
+- **General Questions**: "What is machine learning?" → RAG → Web (if insufficient)
+
 ### Advanced Features
 
 - **Session Management**: Conversations are automatically saved and restored
 - **Multi-turn Dialogues**: Context is maintained across multiple questions
-- **Source Attribution**: See which sources (RAG vs Web) were used for answers
+- **Source Attribution**: See which sources (RAG vs Web vs Weather) were used for answers
+- **Location Detection**: Weather queries automatically extract location information
+
+## 🌤️ Weather Integration
+
+### Supported Weather Queries
+
+The agent recognizes various weather-related questions:
+- "What's the weather in [city]?"
+- "Tell me the weather"
+- "How's the weather in [location]?"
+- "Temperature in [city]"
+- "Weather forecast for [place]"
+
+### Location Handling
+- **Explicit Location**: "Weather in Paris" → Fetches Paris weather
+- **Default Location**: "What's the weather?" → Uses Delhi as default
+- **Smart Extraction**: Uses regex to extract city names from natural language
+
+### Weather Response Format
+```
+The weather in London is light rain with 15°C.
+```
 
 ## 🧪 API Testing
 
@@ -211,7 +254,7 @@ curl -X POST "http://localhost:8000/upload-document/" \
 }
 ```
 
-### Chat Endpoint
+### Chat Endpoint with Weather
 
 ```bash
 curl -X POST "http://localhost:8000/chat/" \
@@ -219,7 +262,7 @@ curl -X POST "http://localhost:8000/chat/" \
      -H "Content-Type: application/json" \
      -d '{
        "session_id": "test-session-001",
-       "query": "What are the treatment options for diabetes?",
+       "query": "What is the weather in Tokyo?",
        "enable_web_search": true
      }'
 ```
@@ -227,19 +270,25 @@ curl -X POST "http://localhost:8000/chat/" \
 **Response:**
 ```json
 {
-  "response": "Based on the available information, diabetes treatment typically includes...",
+  "response": "The weather in Tokyo is clear sky with 22°C.",
   "trace_events": [
     {
       "step": 1,
       "node_name": "router",
-      "description": "Analyzing query type and determining optimal information source",
+      "description": "Router decided: 'weather'",
       "event_type": "router_decision"
     },
     {
       "step": 2,
-      "node_name": "rag_retrieval",
-      "description": "Searching internal knowledge base for relevant information",
-      "event_type": "knowledge_retrieval"
+      "node_name": "weather",
+      "description": "Weather lookup performed. Information retrieved. Proceeding to answer.",
+      "event_type": "weather_action"
+    },
+    {
+      "step": 3,
+      "node_name": "answer",
+      "description": "Generating final answer using gathered context.",
+      "event_type": "answer_generation"
     }
   ]
 }
@@ -255,6 +304,7 @@ curl -X POST "http://localhost:8000/chat/" \
 | `PINECONE_API_KEY` | Pinecone API key for vector DB | Required |
 | `PINECONE_ENVIRONMENT` | Pinecone environment region | Required |
 | `TAVILY_API_KEY` | Tavily API key for web search | Required |
+| `OPENWEATHER_API_KEY` | OpenWeatherMap API key | Required |
 | `FASTAPI_BASE_URL` | Backend API base URL | `http://localhost:8000` |
 | `MAX_TOKENS` | Maximum tokens for LLM responses | `1000` |
 | `TEMPERATURE` | LLM creativity temperature | `0.1` |
@@ -270,13 +320,19 @@ curl -X POST "http://localhost:8000/chat/" \
 2. **API key authentication failures**
    - Check `.env` file exists and contains valid keys
    - Verify API keys have necessary permissions
+   - Test weather API key at OpenWeatherMap
 
 3. **Pinecone connection issues**
    - Confirm index name matches configuration (`rag-index`)
    - Verify index dimensions are set to 384
    - Check Pinecone environment region
 
-4. **Port conflicts**
+4. **Weather service errors**
+   - Verify OpenWeatherMap API key is valid and active
+   - Check if the requested location exists in the weather service
+   - Ensure proper network connectivity
+
+5. **Port conflicts**
    - Backend default port: 8000
    - Frontend default port: 8501
    - Use `--port` flag to specify different ports if needed
@@ -295,17 +351,20 @@ export LANGCHAIN_VERBOSE=true
 - [ ] **Streaming Responses**: Real-time token-by-token output
 - [ ] **Advanced RAG**: Query rewriting and result reranking
 - [ ] **Multi-modal Support**: Image and video processing capabilities
+- [ ] **Weather Forecasts**: Extended weather predictions beyond current conditions
 
 ### Medium-term Features
 - [ ] **Tool Integration**: Calculator, calendar, code interpreter
 - [ ] **Enhanced UI**: Dark mode, animations, custom themes
 - [ ] **Performance Optimization**: Caching and response time improvements
+- [ ] **Location Services**: GPS-based location detection for weather
 
 ### Long-term Vision
 - [ ] **User Authentication**: Multi-user support with profiles
 - [ ] **Analytics Dashboard**: Usage metrics and performance insights
 - [ ] **Enterprise Integration**: SSO, role-based access control
 - [ ] **Multi-language Support**: Internationalization capabilities
+- [ ] **Advanced Weather**: Severe weather alerts and historical data
 
 ## 🤝 Contributing
 
@@ -315,10 +374,12 @@ We welcome contributions! Please see our contributing guidelines for details on:
 - Pull request process
 - Issue reporting
 
-
 ## 🙏 Acknowledgments
 
 - **LangChain** team for the excellent AI orchestration framework
 - **Streamlit** community for the intuitive web app framework
 - **Groq** for providing fast and efficient LLM inference
 - **Pinecone** for scalable vector database solutions
+- **OpenWeatherMap** for reliable weather data services
+
+

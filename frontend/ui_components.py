@@ -30,6 +30,7 @@ def render_document_upload_section(fastapi_base_url: str):
                         st.error(f"An error occurred during upload: {e}")
             else:
                 st.warning("Please upload a PDF file before clicking 'Upload PDF'.")
+    st.markdown("Select the document 'Corpus.pdf' from the 'Data' Folder")
     st.markdown("---")
 
 def render_agent_settings_section():

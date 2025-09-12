@@ -161,6 +161,11 @@ async def chat_with_agent(request: QueryRequest):
                 event_description = f"Web Search performed. Results retrieved. Proceeding to answer."
                 event_details = {"retrieved_content_summary": web_content_summary}
                 event_type = "web_action"
+            elif current_node_name == "weather":
+                weather_content_summary = node_output_state.get("weather", "")[:200] + "..."
+                event_description = f"Weather lookup performed. Information retrieved. Proceeding to answer."
+                event_details = {"retrieved_content_summary": weather_content_summary}
+                event_type = "weather_action"
             elif current_node_name == "answer":
                 event_description = "Generating final answer using gathered context."
                 event_type = "answer_generation"

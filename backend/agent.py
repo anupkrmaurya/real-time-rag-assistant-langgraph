@@ -55,7 +55,7 @@ def weather_tool(location: str) -> str:
 
 # --- Pydantic schemas for structured output ---
 class RouteDecision(BaseModel):
-    route: Literal["rag", "web", "answer", "end"]
+    route: Literal["rag", "web", "answer", "weather", "end"]
     reply: str | None = Field(None, description="Filled only when route == 'end'")
 
 class RagJudge(BaseModel):
@@ -71,19 +71,18 @@ answer_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.7)
 # --- Shared state type ---
 class AgentState(TypedDict, total=False):
     messages: List[BaseMessage]
-    route: Literal["rag", "web", "answer", "end"]
+    route: Literal["rag", "web", "answer", "weather", "end"]
     rag: str
     web: str
+    weather: str
     web_search_enabled: bool # NEW: Add web search enabled flag to state
 
 # --- Node 1: router (decision) ---
 def router_node(state: AgentState, config: RunnableConfig) -> AgentState:
     query = next((m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), "")
-    if "weather" in query.lower():
-        return {**state, "route": "weather"}
     
     print("\n--- Entering router_node ---")
-    web_search_enabled = config.get("configurable", {}).get("web_search_enabled", True) # <-- CHANGED LINE
+    web_search_enabled = config.get("configurable", {}).get("web_search_enabled", True)
     print(f"Router received web search info : {web_search_enabled}")
  
     system_prompt = (
@@ -99,7 +98,8 @@ def router_node(state: AgentState, config: RunnableConfig) -> AgentState:
             "that is unlikely to be in a specific, static knowledge base (e.g., today's news, live data, very recent events)."
             "\n\nChoose one of the following routes:"
             "\n- 'rag': For queries about specific entities, historical facts, product details, procedures, or any information that would typically be found in a curated document collection (e.g., 'What is X?', 'How does Y work?', 'Explain Z policy')."
-            "\n- 'web': For queries about current events, live data, very recent news, or broad general knowledge that requires up-to-date internet access (e.g., 'Who won the election yesterday?', 'What is the weather in London?', 'Latest news on technology')."
+            "\n- 'web': For queries about current events, live data, very recent news, or broad general knowledge that requires up-to-date internet access (e.g., 'Who won the election yesterday?', 'Latest news on technology')."
+            "\n- 'weather': For weather-related queries (e.g., 'What is the weather in London?', 'weather', 'temperature in Paris')."
         )
     else:
         system_prompt += (
@@ -107,6 +107,7 @@ def router_node(state: AgentState, config: RunnableConfig) -> AgentState:
             "If a query would normally require web search, you should attempt to answer it using RAG (if applicable) or directly from your general knowledge."
             "\n\nChoose one of the following routes:"
             "\n- 'rag': For queries about specific entities, historical facts, product details, procedures, or any information that would typically be found in a curated document collection, AND for queries that would normally go to web search but web search is disabled."
+            "\n- 'weather': For weather-related queries (e.g., 'What is the weather in London?', 'weather', 'temperature in Paris')."
             "\n- 'answer': For very simple, direct questions you can answer without any external lookup (e.g., 'What is your name?')."
         )
 
@@ -119,6 +120,7 @@ def router_node(state: AgentState, config: RunnableConfig) -> AgentState:
         "\n- User: 'Who won the NBA finals last night?' -> Route: 'web' (Current event, requires live data)."
         "\n- User: 'How do I submit an expense report?' -> Route: 'rag' (Internal procedure)."
         "\n- User: 'Tell me about quantum computing.' -> Route: 'rag' (Foundational knowledge can be in KB. If KB is sparse, judge will route to web if enabled)."
+        "\n- User: 'What is the weather in Delhi?' -> Route: 'weather' (Weather query)."
         "\n- User: 'Hello there!' -> Route: 'end', reply='Hello! How can I assist you today?'"
     )
 
@@ -234,7 +236,29 @@ def web_node(state: AgentState,config:RunnableConfig) -> AgentState:
     print("--- Exiting web_node ---")
     return {**state, "web": snippets, "route": "answer"}
 
-# --- Node 4: final answer ---
+# --- Node 4: Weather node ---
+def weather_node(state: AgentState, config: RunnableConfig) -> AgentState:
+    print("\n--- Entering weather_node ---")
+    query = next((m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), "")
+    
+    # Extract location from query or use a default
+    # Simple location extraction - you might want to make this more sophisticated
+    import re
+    location_match = re.search(r'weather (?:in |for )?([a-zA-Z\s,]+)', query.lower())
+    if location_match:
+        location = location_match.group(1).strip()
+    else:
+        # If no specific location mentioned, you could ask or use a default
+        location = "Delhi"  # Default location
+    
+    print(f"Weather query for location: {location}")
+    weather_info = weather_tool.invoke(location)
+    print(f"Weather info: {weather_info}")
+    print("--- Exiting weather_node ---")
+    
+    return {**state, "weather": weather_info, "route": "answer"}
+
+# --- Node 5: final answer ---
 def answer_node(state: AgentState) -> AgentState:
     print("\n--- Entering answer_node ---")
     user_q = next((m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), "")
@@ -247,6 +271,8 @@ def answer_node(state: AgentState) -> AgentState:
         # We should only include actual search results here.
         if state["web"] and not state["web"].startswith("Web search was disabled"):
             ctx_parts.append("Web Search Results:\n" + state["web"])
+    if state.get("weather"):
+        ctx_parts.append("Weather Information:\n" + state["weather"])
     
     context = "\n\n".join(ctx_parts)
     if not context.strip():
@@ -272,13 +298,16 @@ Provide a helpful, accurate, and concise response based on the available informa
     }
 
 # --- Routing helpers ---
-def from_router(st: AgentState) -> Literal["rag", "web", "answer", "end"]:
+def from_router(st: AgentState) -> Literal["rag", "web", "answer", "weather", "end"]:
     return st["route"]
 
 def after_rag(st: AgentState) -> Literal["answer", "web"]:
     return st["route"]
 
 def after_web(_) -> Literal["answer"]:
+    return "answer"
+
+def after_weather(_) -> Literal["answer"]:
     return "answer"
 
 # --- Build graph ---
@@ -288,6 +317,7 @@ def build_agent():
     g.add_node("router", router_node)
     g.add_node("rag_lookup", rag_node)
     g.add_node("web_search", web_node)
+    g.add_node("weather", weather_node)
     g.add_node("answer", answer_node)
 
     g.set_entry_point("router")
@@ -298,6 +328,7 @@ def build_agent():
         {
             "rag": "rag_lookup",
             "web": "web_search",
+            "weather": "weather",
             "answer": "answer",
             "end": END
         }
@@ -313,6 +344,7 @@ def build_agent():
     )
     
     g.add_edge("web_search", "answer")
+    g.add_edge("weather", "answer")
     g.add_edge("answer", END)
 
     agent = g.compile(checkpointer=MemorySaver())
